@@ -1,9 +1,8 @@
+import Login from './pages/Login';
+import './index.css';
+
 function App() {
-  return (
-    <div>
-      <h1>Setup Complete</h1>
-    </div>
-  );
+  return <Login />;
 }
 
 export default App;
