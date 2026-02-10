@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Workflow } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
+import { Workflow, Sun, Moon } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
+    const { theme, toggleTheme } = useTheme();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -43,6 +45,11 @@ const Login = () => {
 
     return (
         <div className="login-container">
+            {/* Theme Toggle Button */}
+            <button className="theme-toggle" onClick={toggleTheme} aria-label="Toggle theme">
+                {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
+            </button>
+
             <div className="login-content">
                 <div className="login-header">
                     <div className="login-logo">
