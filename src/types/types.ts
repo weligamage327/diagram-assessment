@@ -10,3 +10,10 @@ export interface AuthContextType {
     signIn: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
 }
+
+export type Theme = 'light' | 'dark';
+
+export interface ThemeContextType {
+    theme: Theme;
+    toggleTheme: () => void;
+}

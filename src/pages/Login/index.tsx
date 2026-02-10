@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
-import { useAuth } from '../../contexts/AuthContext';
-import { Workflow, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../../hooks/useTheme';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { LayoutGrid, Sun, Moon } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
+    const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const { signIn } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
@@ -38,7 +40,7 @@ const Login = () => {
         try {
             if (isLogin) {
                 await signIn(email, password);
-                alert(`Login successful! Welcome ${email}`);
+                navigate('/dashboard');
             } else {
                 // TODO: need to implement sign up later
                 setError('Sign up is not available yet');
@@ -69,7 +71,7 @@ const Login = () => {
             <div className="login-content">
                 <div className="login-header">
                     <div className="login-logo">
-                        <Workflow size={32} />
+                        <LayoutGrid size={32} />
                     </div>
                     <h1 className="login-title">Diagram Builder</h1>
                     <p className="login-subtitle">Create and collaborate on visual diagrams</p>
