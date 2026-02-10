@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
 import { Workflow, Sun, Moon } from 'lucide-react';
 import './Login.css';
 
 const Login = () => {
     const { theme, toggleTheme } = useTheme();
+    const { signIn } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -34,10 +36,24 @@ const Login = () => {
         setLoading(true);
 
         try {
-            // TODO: need to replace this with Firebase authentication
-            await new Promise(resolve => setTimeout(resolve, 500));
-        } catch {
-            setError('Authentication failed. Please try again.');
+            if (isLogin) {
+                await signIn(email, password);
+                alert(`Login successful! Welcome ${email}`);
+            } else {
+                // TODO: need to implement sign up later
+                setError('Sign up is not available yet');
+            }
+        } catch (err) {
+            const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
+            if (errorMessage.includes('auth/invalid-credential')) {
+                setError('Invalid email or password');
+            } else if (errorMessage.includes('auth/user-not-found')) {
+                setError('No account found with this email');
+            } else if (errorMessage.includes('auth/wrong-password')) {
+                setError('Incorrect password');
+            } else {
+                setError('Authentication failed. Please try again.');
+            }
         } finally {
             setLoading(false);
         }
