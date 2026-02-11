@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from '../pages/Login';
 import Dashboard from '../pages/Dashboard';
 import Profile from '../pages/Profile';
+import DiagramEditor from '../pages/Editor';
 import ProtectedRoute from '../components/ProtectedRoute';
 
 const AppRoutes = () => {
@@ -21,6 +22,22 @@ const AppRoutes = () => {
                 element={
                     <ProtectedRoute>
                         <Profile />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/editor"
+                element={
+                    <ProtectedRoute>
+                        <DiagramEditor />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/editor/:id"
+                element={
+                    <ProtectedRoute>
+                        <DiagramEditor />
                     </ProtectedRoute>
                 }
             />

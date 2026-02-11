@@ -1,17 +1,49 @@
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
-import { Sun, Moon, Plus, LogOut, User, LayoutGrid } from 'lucide-react';
+import { useDiagrams } from '../../hooks/useDiagrams';
+import type { Diagram } from '../../types/types';
+import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2 } from 'lucide-react';
 import './Dashboard.css';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
-    const { user, logout } = useAuth();
-    // Diagrams state removed
+    const { user, userProfile, logout } = useAuth();
+    const { getUserDiagrams } = useDiagrams();
+
+    const [diagrams, setDiagrams] = useState<Diagram[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const isViewer = userProfile?.role === 'viewer';
+
+    // ... (useEffect remains same) ...
+
+    useEffect(() => {
+        const fetchDiagrams = async () => {
+            try {
+                const data = await getUserDiagrams();
+                setDiagrams(data);
+            } catch (error) {
+                console.error('Failed to fetch diagrams', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchDiagrams();
+        }
+    }, [user, getUserDiagrams]);
 
     const handleCreateDiagram = () => {
-        alert('Create Diagram ');
+        if (isViewer) return;
+        navigate('/editor');
+    };
+
+    const handleOpenDiagram = (id: string) => {
+        navigate(`/editor/${id}`);
     };
 
     const handleLogout = async () => {
@@ -22,11 +54,11 @@ const DashboardPage = () => {
             console.error('Logout failed:', error);
         }
     };
-
     return (
         <div className="dashboard-container">
-            {/* Header */}
+            {/* ... Header ... */}
             <header className="dashboard-header">
+                {/* ... same header content ... */}
                 <div className="header-left">
                     <div className="header-logo">
                         <LayoutGrid size={24} />
@@ -67,26 +99,57 @@ const DashboardPage = () => {
                             <h2 className="content-title">My Diagrams</h2>
                             <p className="content-subtitle">Create and manage your visual diagrams</p>
                         </div>
-                        <button className="create-btn" onClick={handleCreateDiagram}>
-                            <Plus size={20} />
-                            <span>New Diagram</span>
-                        </button>
+                        {!isViewer && (
+                            <button className="create-btn" onClick={handleCreateDiagram}>
+                                <Plus size={20} />
+                                <span>New Diagram</span>
+                            </button>
+                        )}
                     </div>
 
-                    {/* Diagrams Grid Placeholder */}
-                    <div className="empty-state">
-                        <div className="empty-icon">
-                            <LayoutGrid size={48} />
+                    {loading ? (
+                        <div className="empty-state">
+                            <Loader2 className="animate-spin" size={48} />
+                            <p className="empty-subtitle">Loading diagrams...</p>
                         </div>
-                        <h3 className="empty-title">Welcome to Diagram Builder</h3>
-                        <p className="empty-subtitle">
-                            Ready to create your first diagram?
-                        </p>
-                        <button className="create-btn" onClick={handleCreateDiagram}>
-                            <Plus size={20} />
-                            <span>Create New Diagram</span>
-                        </button>
-                    </div>
+                    ) : diagrams.length === 0 ? (
+                        <div className="empty-state">
+                            <div className="empty-icon">
+                                <LayoutGrid size={48} />
+                            </div>
+                            <h3 className="empty-title">No diagrams yet</h3>
+                            <p className="empty-subtitle">
+                                {isViewer ? "You haven't been assigned any diagrams yet." : "Create your first diagram to get started"}
+                            </p>
+                            {!isViewer && (
+                                <button className="create-btn" onClick={handleCreateDiagram}>
+                                    <Plus size={20} />
+                                    <span>Create Diagram</span>
+                                </button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="diagrams-grid">
+                            {diagrams.map((diagram) => (
+                                <div
+                                    key={diagram.id}
+                                    className="diagram-card"
+                                    onClick={() => handleOpenDiagram(diagram.id)}
+                                >
+                                    {/* ... card content same ... */}
+                                    <div className="diagram-preview">
+                                        <LayoutGrid size={32} />
+                                    </div>
+                                    <div className="diagram-info">
+                                        <h4 className="diagram-name">{diagram.name}</h4>
+                                        <p className="diagram-meta">
+                                            {diagram.nodeCount} nodes • Updated {diagram.updatedAt?.toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </main>
         </div>

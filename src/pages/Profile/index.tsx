@@ -7,7 +7,7 @@ import './Profile.css';
 const Profile = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
-    const { user, logout } = useAuth();
+    const { user, userProfile, logout } = useAuth();
 
     const handleLogout = async () => {
         try {
@@ -43,7 +43,9 @@ const Profile = () => {
 
                     <div className="profile-info">
                         <h2 className="profile-email">{user?.email}</h2>
-                        <p className="profile-role">Editor</p>
+                        <p className="profile-role">
+                            {userProfile?.role ? userProfile.role.toUpperCase() : 'Loading...'}
+                        </p>
                     </div>
 
                     <div className="profile-stats">
