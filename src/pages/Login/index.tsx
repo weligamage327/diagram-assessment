@@ -8,7 +8,7 @@ import './Login.css';
 const Login = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
-    const { signIn } = useAuth();
+    const { signIn, signUp } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -40,11 +40,10 @@ const Login = () => {
         try {
             if (isLogin) {
                 await signIn(email, password);
-                navigate('/dashboard');
             } else {
-                // TODO: need to implement sign up later
-                setError('Sign up is not available yet');
+                await signUp(email, password);
             }
+            navigate('/dashboard');
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Authentication failed';
             if (errorMessage.includes('auth/invalid-credential')) {

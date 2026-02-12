@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useDiagrams } from '../../hooks/useDiagrams';
-import type { Diagram } from '../../types/types';
+import type { Diagram } from '../../types';
 import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2 } from 'lucide-react';
 import './Dashboard.css';
 
@@ -17,8 +17,6 @@ const DashboardPage = () => {
     const [loading, setLoading] = useState(true);
 
     const isViewer = userProfile?.role === 'viewer';
-
-    // ... (useEffect remains same) ...
 
     useEffect(() => {
         const fetchDiagrams = async () => {

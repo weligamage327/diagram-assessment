@@ -1,4 +1,5 @@
 import type { User as FirebaseUser } from 'firebase/auth';
+import type { Node, Edge } from '@xyflow/react';
 
 // User roles
 export type UserRole = 'editor' | 'viewer';
@@ -9,6 +10,7 @@ export interface AuthContextType {
     userProfile: UserProfile | null;
     loading: boolean;
     signIn: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string) => Promise<void>;
     logout: () => Promise<void>;
 }
 
@@ -27,24 +29,18 @@ export interface ThemeContextType {
 }
 
 // Diagram types
-export interface DiagramNode {
-    id: string;
-    type: string;
-    position: { x: number; y: number };
-    data: { label: string };
-    [key: string]: any;
-}
+export type AppNodeData = {
+    label: string;
+    color?: string;
+    [key: string]: unknown;
+};
 
-export interface DiagramEdge {
-    id: string;
-    source: string;
-    target: string;
-    [key: string]: any;
-}
+export type AppNode = Node<AppNodeData>;
+export type AppEdge = Edge;
 
 export interface DiagramData {
-    nodes: DiagramNode[];
-    edges: DiagramEdge[];
+    nodes: AppNode[];
+    edges: AppEdge[];
     viewport: { x: number; y: number; zoom: number };
 }
 

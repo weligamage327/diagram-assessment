@@ -1,13 +1,17 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
-import { User, LogOut, ArrowLeft, Moon, Sun } from 'lucide-react';
+import { db } from '../../services/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { User, LogOut, ArrowLeft, Moon, Sun, Shield, Loader2 } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const { user, userProfile, logout } = useAuth();
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -15,6 +19,26 @@ const Profile = () => {
             navigate('/login');
         } catch (error) {
             console.error('Logout failed:', error);
+        }
+    };
+
+    const toggleRole = async () => {
+        if (!user || !userProfile) return;
+
+        setIsUpdating(true);
+        try {
+            const newRole = userProfile.role === 'viewer' ? 'editor' : 'viewer';
+            const userRef = doc(db, 'users', user.uid);
+
+            await updateDoc(userRef, {
+                role: newRole
+            });
+
+            setIsUpdating(false);
+        } catch (error) {
+            console.error('Failed to update role:', error);
+            alert('Failed to update role');
+            setIsUpdating(false);
         }
     };
 
@@ -43,26 +67,34 @@ const Profile = () => {
 
                     <div className="profile-info">
                         <h2 className="profile-email">{user?.email}</h2>
-                        <p className="profile-role">
-                            {userProfile?.role ? userProfile.role.toUpperCase() : 'Loading...'}
-                        </p>
-                    </div>
-
-                    <div className="profile-stats">
-                        <div className="stat-item">
-                            <span className="stat-value">0</span>
-                            <span className="stat-label">Diagrams</span>
-                        </div>
-                        <div className="stat-item">
-                            <span className="stat-value">Active</span>
-                            <span className="stat-label">Status</span>
+                        <div className="role-badge-container">
+                            <span className={`role-badge ${userProfile?.role || 'viewer'}`}>
+                                {userProfile?.role ? userProfile.role.toUpperCase() : 'LOADING...'}
+                            </span>
                         </div>
                     </div>
 
-                    <button className="logout-button" onClick={handleLogout}>
-                        <LogOut size={18} />
-                        <span>Sign Out</span>
-                    </button>
+                    <div className="profile-actions">
+                        <button
+                            className="role-switch-btn"
+                            onClick={toggleRole}
+                            disabled={isUpdating}
+                        >
+                            {isUpdating ? (
+                                <Loader2 className="animate-spin" size={18} />
+                            ) : (
+                                <Shield size={18} />
+                            )}
+                            <span>
+                                Switch to {userProfile?.role === 'viewer' ? 'Editor' : 'Viewer'} Mode
+                            </span>
+                        </button>
+
+                        <button className="logout-button" onClick={handleLogout}>
+                            <LogOut size={18} />
+                            <span>Sign Out</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -71,17 +103,13 @@ const Profile = () => {
                 <div className="role-info-card">
                     <h3>Role Permissions</h3>
                     <div className="role-list">
-                        <div className="role-item">
+                        <div className={`role-item ${userProfile?.role === 'viewer' ? 'active' : ''}`}>
                             <span className="role-badge viewer">viewer</span>
                             <p>Can view diagrams only</p>
                         </div>
-                        <div className="role-item">
+                        <div className={`role-item ${userProfile?.role === 'editor' ? 'active' : ''}`}>
                             <span className="role-badge editor">editor</span>
                             <p>Can view and edit diagrams</p>
-                        </div>
-                        <div className="role-item">
-                            <span className="role-badge admin">admin</span>
-                            <p>Full access - can manage users and diagrams</p>
                         </div>
                     </div>
                 </div>

@@ -14,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from './useAuth';
-import type { Diagram, DiagramData } from '../types/types';
+import type { Diagram, DiagramData } from '../types';
 
 export const useDiagrams = () => {
     const { user } = useAuth();

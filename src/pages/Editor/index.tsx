@@ -8,23 +8,22 @@ import {
     useNodesState,
     useEdgesState,
     addEdge,
-    type Node,
-    type Edge,
     type OnConnect,
     BackgroundVariant,
     ReactFlowProvider,
     useReactFlow,
+    type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTheme } from '../../hooks/useTheme';
 import { useDiagrams } from '../../hooks/useDiagrams';
 import { useAuth } from '../../hooks/useAuth';
-import type { DiagramData } from '../../types/types';
+import type { DiagramData, AppNode, AppEdge } from '../../types';
 import { ArrowLeft, Save, Sun, Moon, Plus, Trash2, Loader2 } from 'lucide-react';
 import './DiagramEditor.css';
 
 // Initial nodes for a new diagram
-const initialNodes: Node[] = [
+const initialNodes: AppNode[] = [
     {
         id: '1',
         position: { x: 250, y: 100 },
@@ -44,7 +43,7 @@ const initialNodes: Node[] = [
     },
 ];
 
-const initialEdges: Edge[] = [
+const initialEdges: AppEdge[] = [
     { id: 'e1-2', source: '1', target: '2', animated: true },
     { id: 'e2-3', source: '2', target: '3' },
 ];
@@ -77,13 +76,16 @@ const DiagramEditorContent = () => {
                     setDiagramName(diagram.name);
                     if (diagram.data) {
                         const loadedData = diagram.data as DiagramData;
-                        const mappedNodes = loadedData.nodes.map(n => ({
+                        // Map loaded nodes to ensure they work with default types
+                        const mappedNodes = loadedData.nodes.map((n) => ({
                             ...n,
-                            data: n.data || { label: 'Node' }
-                        })) as Node[];
+                            data: n.data || { label: 'Node' },
+                            // Keep existing type if it's default/input/output, otherwise fallback to default
+                            type: ['input', 'output', 'default'].includes(n.type || '') ? n.type : undefined,
+                        })) as AppNode[];
 
                         setNodes(mappedNodes);
-                        setEdges((loadedData.edges as Edge[]) || []);
+                        setEdges((loadedData.edges as AppEdge[]) || []);
                     }
                 } else {
                     alert('Diagram not found');
@@ -109,9 +111,30 @@ const DiagramEditorContent = () => {
         [setEdges, isViewer]
     );
 
+    const onNodeClick = useCallback(
+        (_: React.MouseEvent, node: Node) => {
+            if (isViewer) return;
+            // Prevent prompt if clicking on controls/handles (handled by React Flow, but good safety)
+            const currentLabel = node.data.label as string;
+            const newLabel = window.prompt('Enter new label:', currentLabel);
+
+            if (newLabel !== null && newLabel !== currentLabel) {
+                setNodes((nds) =>
+                    nds.map((n) => {
+                        if (n.id === node.id) {
+                            return { ...n, data: { ...n.data, label: newLabel } };
+                        }
+                        return n;
+                    })
+                );
+            }
+        },
+        [isViewer, setNodes]
+    );
+
     const addNode = () => {
         if (isViewer) return;
-        const newNode: Node = {
+        const newNode: AppNode = {
             id: `${nodes.length + 1}_${Date.now()}`,
             position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
             data: { label: `Node ${nodes.length + 1}` },
@@ -137,8 +160,8 @@ const DiagramEditorContent = () => {
         try {
             const viewport = getViewport();
             const diagramData: DiagramData = {
-                nodes: nodes as any,
-                edges: edges as any,
+                nodes: nodes,
+                edges: edges,
                 viewport
             };
 
@@ -160,22 +183,6 @@ const DiagramEditorContent = () => {
     const handleBack = () => {
         navigate('/dashboard');
     };
-
-    // Node label editing logic
-    const onNodeClick = useCallback((_event: React.MouseEvent, node: Node) => {
-        if (isViewer) return;
-        const newLabel = prompt('Enter new label:', node.data.label as string);
-        if (newLabel !== null) {
-            setNodes((nds) =>
-                nds.map((n) => {
-                    if (n.id === node.id) {
-                        return { ...n, data: { ...n.data, label: newLabel } };
-                    }
-                    return n;
-                })
-            );
-        }
-    }, [setNodes, isViewer]);
 
     if (isLoading) {
         return (
@@ -239,7 +246,7 @@ const DiagramEditorContent = () => {
 
             {/* React Flow Canvas */}
             <div className="editor-canvas">
-                <ReactFlow
+                <ReactFlow<AppNode, AppEdge>
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}

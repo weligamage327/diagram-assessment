@@ -2,13 +2,14 @@ import { useState, useEffect, type ReactNode } from 'react';
 import {
     onAuthStateChanged,
     signInWithEmailAndPassword,
+    createUserWithEmailAndPassword,
     signOut,
     type User as FirebaseUser
 } from 'firebase/auth';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../services/firebase';
 import { AuthContext } from '../hooks/useAuth';
-import type { UserProfile, UserRole } from '../types/types';
+import type { UserProfile, UserRole } from '../types';
 
 interface AuthProviderProps {
     children: ReactNode;
@@ -21,77 +22,83 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     // Listen for auth state changes
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        let unsubscribeSnapshot: (() => void) | null = null;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
             setUser(firebaseUser);
 
+            // Cleanup previous snapshot listener if user changes
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot();
+                unsubscribeSnapshot = null;
+            }
+
             if (firebaseUser) {
+                const userDocRef = doc(db, 'users', firebaseUser.uid);
+
                 try {
-                    // 1. Try fetching by UID (standard)
-                    const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+                    // Check existence once to handle creation if needed
+                    const userDocSnap = await getDoc(userDocRef);
 
-                    if (userDoc.exists()) {
-                        const data = userDoc.data();
-                        setUserProfile({
-                            uid: userDoc.id,
-                            email: data.email,
-                            role: data.role as UserRole,
-                            createdAt: data.createdAt?.toDate() || new Date(),
+                    if (!userDocSnap.exists()) {
+                        // Create new user profile if it doesn't exist
+                        const newUserProfile: UserProfile = {
+                            uid: firebaseUser.uid,
+                            email: firebaseUser.email || '',
+                            role: 'viewer', // Default role
+                            createdAt: new Date(),
+                        };
+
+                        await setDoc(userDocRef, {
+                            email: newUserProfile.email,
+                            role: newUserProfile.role,
+                            createdAt: newUserProfile.createdAt,
                         });
-                    } else {
-                        // 2. Try fetching by Email (fallback for manual entries)
-                        if (firebaseUser.email) {
-                            const q = query(collection(db, 'users'), where('email', '==', firebaseUser.email));
-                            const querySnapshot = await getDocs(q);
+                        // The snapshot listener below will pick up this new doc
+                    }
 
-                            if (!querySnapshot.empty) {
-                                const userDoc = querySnapshot.docs[0];
-                                const data = userDoc.data();
-                                setUserProfile({
-                                    uid: userDoc.id,
-                                    email: data.email,
-                                    role: data.role as UserRole,
-                                    createdAt: data.createdAt?.toDate() || new Date(),
-                                });
-                            } else {
-                                // Fallback default
-                                setUserProfile({
-                                    uid: firebaseUser.uid,
-                                    email: firebaseUser.email || '',
-                                    role: 'editor', // Default so I can test
-                                    createdAt: new Date(),
-                                });
-                            }
-                        } else {
-                            // No email to query with
+                    // Set up real-time listener
+                    unsubscribeSnapshot = onSnapshot(userDocRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            const data = docSnap.data();
                             setUserProfile({
-                                uid: firebaseUser.uid,
-                                email: '',
-                                role: 'editor',
-                                createdAt: new Date(),
+                                uid: docSnap.id,
+                                email: data.email,
+                                role: data.role as UserRole,
+                                createdAt: data.createdAt?.toDate() || new Date(),
                             });
                         }
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                    // Fallback
-                    setUserProfile({
-                        uid: firebaseUser.uid,
-                        email: firebaseUser.email || '',
-                        role: 'editor',
-                        createdAt: new Date(),
+                        setLoading(false);
+                    }, (error) => {
+                        console.error("Error in user snapshot listener:", error);
+                        setLoading(false);
                     });
+
+                } catch (error) {
+                    console.error("Error initializing user profile:", error);
+                    setLoading(false);
                 }
             } else {
                 setUserProfile(null);
+                setLoading(false);
             }
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        // Cleanup on unmount
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeSnapshot) {
+                unsubscribeSnapshot();
+            }
+        };
     }, []);
 
     const signIn = async (email: string, password: string): Promise<void> => {
         await signInWithEmailAndPassword(auth, email, password);
+    };
+
+    const signUp = async (email: string, password: string): Promise<void> => {
+        await createUserWithEmailAndPassword(auth, email, password);
     };
 
     const logout = async (): Promise<void> => {
@@ -100,7 +107,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, userProfile, loading, signIn, logout }}>
+        <AuthContext.Provider value={{ user, userProfile, loading, signIn, signUp, logout }}>
             {children}
         </AuthContext.Provider>
     );
