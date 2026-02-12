@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
     ReactFlow,
     MiniMap,
@@ -12,7 +12,6 @@ import {
     BackgroundVariant,
     ReactFlowProvider,
     useReactFlow,
-    type Node,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { useTheme } from '../../hooks/useTheme';
@@ -21,6 +20,14 @@ import { useAuth } from '../../hooks/useAuth';
 import type { DiagramData, AppNode, AppEdge } from '../../types';
 import { ArrowLeft, Save, Sun, Moon, Plus, Trash2, Loader2 } from 'lucide-react';
 import './DiagramEditor.css';
+
+import { BaseNode } from './BaseNode';
+
+const nodeTypes = {
+    default: BaseNode,
+    input: BaseNode,
+    output: BaseNode,
+};
 
 // Initial nodes for a new diagram
 const initialNodes: AppNode[] = [
@@ -34,6 +41,7 @@ const initialNodes: AppNode[] = [
         id: '2',
         position: { x: 250, y: 250 },
         data: { label: 'Process' },
+        type: 'default',
     },
     {
         id: '3',
@@ -50,6 +58,7 @@ const initialEdges: AppEdge[] = [
 
 const DiagramEditorContent = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { id } = useParams<{ id: string }>();
     const { theme, toggleTheme } = useTheme();
     const { createDiagram, updateDiagram, getDiagram, loading: dbLoading } = useDiagrams();
@@ -63,6 +72,19 @@ const DiagramEditorContent = () => {
     const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
     const [isSaving, setIsSaving] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<string | null>(null);
+    const [lastSavedSnapshot, setLastSavedSnapshot] = useState<string>(
+        JSON.stringify({ nodes: initialNodes, edges: initialEdges, name: id ? 'Untitled Diagram' : 'New Diagram' })
+    );
+
+    // Check for save message from navigation
+    useEffect(() => {
+        if (location.state?.saved) {
+            setSaveMessage('Diagram saved successfully!');
+            setTimeout(() => setSaveMessage(null), 3000);
+            window.history.replaceState({}, document.title);
+        }
+    }, [location]);
 
     // Load diagram
     useEffect(() => {
@@ -81,11 +103,18 @@ const DiagramEditorContent = () => {
                             ...n,
                             data: n.data || { label: 'Node' },
                             // Keep existing type if it's default/input/output, otherwise fallback to default
-                            type: ['input', 'output', 'default'].includes(n.type || '') ? n.type : undefined,
+                            type: ['input', 'output', 'default'].includes(n.type || '') ? n.type : 'default',
                         })) as AppNode[];
 
                         setNodes(mappedNodes);
                         setEdges((loadedData.edges as AppEdge[]) || []);
+
+                        // Update snapshot to mark as clean
+                        setLastSavedSnapshot(JSON.stringify({
+                            nodes: mappedNodes,
+                            edges: (loadedData.edges as AppEdge[]) || [],
+                            name: diagram.name
+                        }));
                     }
                 } else {
                     alert('Diagram not found');
@@ -111,33 +140,13 @@ const DiagramEditorContent = () => {
         [setEdges, isViewer]
     );
 
-    const onNodeClick = useCallback(
-        (_: React.MouseEvent, node: Node) => {
-            if (isViewer) return;
-            // Prevent prompt if clicking on controls/handles (handled by React Flow, but good safety)
-            const currentLabel = node.data.label as string;
-            const newLabel = window.prompt('Enter new label:', currentLabel);
-
-            if (newLabel !== null && newLabel !== currentLabel) {
-                setNodes((nds) =>
-                    nds.map((n) => {
-                        if (n.id === node.id) {
-                            return { ...n, data: { ...n.data, label: newLabel } };
-                        }
-                        return n;
-                    })
-                );
-            }
-        },
-        [isViewer, setNodes]
-    );
-
     const addNode = () => {
         if (isViewer) return;
         const newNode: AppNode = {
             id: `${nodes.length + 1}_${Date.now()}`,
             position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
             data: { label: `Node ${nodes.length + 1}` },
+            type: 'default',
         };
         setNodes((nds) => [...nds, newNode]);
     };
@@ -167,11 +176,15 @@ const DiagramEditorContent = () => {
 
             if (id) {
                 await updateDiagram(id, diagramName, diagramData);
+                setSaveMessage('Diagram saved successfully!');
+                setTimeout(() => setSaveMessage(null), 3000);
             } else {
                 const newId = await createDiagram(diagramName, diagramData);
-                navigate(`/editor/${newId}`, { replace: true });
+                navigate(`/editor/${newId}`, { replace: true, state: { saved: true } });
             }
-            alert('Diagram saved successfully!');
+
+            // Update snapshot to mark as clean
+            setLastSavedSnapshot(JSON.stringify({ nodes: nodes, edges: edges, name: diagramName }));
         } catch (error) {
             console.error('Failed to save', error);
             alert('Failed to save diagram');
@@ -179,6 +192,8 @@ const DiagramEditorContent = () => {
             setIsSaving(false);
         }
     };
+
+
 
     const handleBack = () => {
         navigate('/dashboard');
@@ -192,8 +207,30 @@ const DiagramEditorContent = () => {
         );
     }
 
+    const isDirty = JSON.stringify({ nodes, edges, name: diagramName }) !== lastSavedSnapshot;
+
     return (
         <div className="editor-container">
+            {saveMessage && (
+                <div style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    backgroundColor: '#10b981',
+                    color: 'white',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    zIndex: 1000,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    animation: 'fadeIn 0.3s ease-in-out'
+                }}>
+                    <span>{saveMessage}</span>
+                </div>
+            )}
             <header className="editor-header">
                 <div className="header-left">
                     <button className="editor-btn icon-btn" onClick={handleBack} aria-label="Back">
@@ -221,7 +258,7 @@ const DiagramEditorContent = () => {
                             </button>
                             <button className="editor-btn danger" onClick={deleteSelectedNodes}>
                                 <Trash2 size={18} />
-                                <span>Delete</span>
+                                <span>Delete Node</span>
                             </button>
                         </>
                     )}
@@ -232,27 +269,33 @@ const DiagramEditorContent = () => {
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
                     {!isViewer && (
-                        <button
-                            className="editor-btn primary"
-                            onClick={handleSave}
-                            disabled={isSaving || dbLoading}
-                        >
-                            {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                            <span>{isSaving ? 'Saving...' : 'Save'}</span>
-                        </button>
+                        <>
+
+                            <button
+                                className="editor-btn primary"
+                                onClick={handleSave}
+                                disabled={isSaving || dbLoading || !isDirty}
+                                title={!isDirty ? "No changes to save" : "Save diagram"}
+                                style={{ opacity: !isDirty ? 0.5 : 1, cursor: !isDirty ? 'not-allowed' : 'pointer' }}
+                            >
+                                {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
+                                <span>{isSaving ? 'Saving...' : 'Save'}</span>
+                            </button>
+                        </>
                     )}
                 </div>
-            </header>
+            </header >
 
             {/* React Flow Canvas */}
-            <div className="editor-canvas">
+            < div className="editor-canvas" >
                 <ReactFlow<AppNode, AppEdge>
                     nodes={nodes}
                     edges={edges}
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
-                    onNodeClick={onNodeClick}
+                    // onNodeClick={onNodeClick} - Removed for inline editing
+                    nodeTypes={nodeTypes}
                     fitView
                     colorMode={theme === 'dark' ? 'dark' : 'light'}
                     nodesDraggable={!isViewer}
@@ -271,8 +314,8 @@ const DiagramEditorContent = () => {
                         color={theme === 'dark' ? '#374151' : '#94a3b8'}
                     />
                 </ReactFlow>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 

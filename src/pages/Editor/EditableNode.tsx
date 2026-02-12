@@ -6,14 +6,12 @@ export function EditableNode({ id, data, isConnectable, type, selected }: NodePr
     const { updateNodeData } = useReactFlow();
     const [isEditing, setIsEditing] = useState(false);
     const [label, setLabel] = useState(data.label);
-    const [color, setColor] = useState(data.color || '#ffffff');
     const inputRef = useRef<HTMLInputElement>(null);
 
     // Sync local state
     useEffect(() => {
         setLabel(data.label);
-        setColor(data.color || '#ffffff');
-    }, [data.label, data.color]);
+    }, [data.label]);
 
     // Focus input when editing starts
     useEffect(() => {
@@ -26,12 +24,6 @@ export function EditableNode({ id, data, isConnectable, type, selected }: NodePr
         updateNodeData(id, { label });
         setIsEditing(false);
     }, [id, label, updateNodeData]);
-
-    const onColorChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
-        const newColor = evt.target.value;
-        setColor(newColor);
-        updateNodeData(id, { color: newColor });
-    }, [id, updateNodeData]);
 
     const onCancel = useCallback(() => {
         setLabel(data.label);
@@ -55,9 +47,9 @@ export function EditableNode({ id, data, isConnectable, type, selected }: NodePr
             border: selected ? '2px solid var(--accent-primary, #3b82f6)' : '1px solid #e2e8f0',
             boxShadow: selected ? '0 0 0 1px var(--accent-primary, #3b82f6), 0 4px 6px -1px rgba(0,0,0,0.1)' : '0 4px 6px -1px rgba(0,0,0,0.1)',
         }}>
-            {/* Header (Label) */}
+            {/* Label Area */}
             <div
-                style={styles.header}
+                style={styles.labelContainer}
                 onDoubleClick={() => setIsEditing(true)}
             >
                 {isEditing ? (
@@ -70,32 +62,19 @@ export function EditableNode({ id, data, isConnectable, type, selected }: NodePr
                         className="nodrag"
                         style={{
                             width: '100%',
-                            fontSize: '12px',
-                            fontWeight: 'bold',
+                            textAlign: 'center',
+                            fontSize: '14px',
+                            fontWeight: 500,
                             border: '1px solid #ccc',
-                            borderRadius: '2px',
-                            padding: '1px 4px',
+                            borderRadius: '4px',
+                            padding: '4px',
                             color: '#334155',
+                            backgroundColor: '#fff',
                         }}
                     />
                 ) : (
-                    <span style={styles.headerLabel}>{label || 'Node'}</span>
+                    <span style={styles.labelText}>{label || 'Node'}</span>
                 )}
-            </div>
-
-            {/* Body (Color Picker) */}
-            <div style={styles.body}>
-                <div style={styles.pickerWrapper}>
-                    <input
-                        type="color"
-                        value={color}
-                        onChange={onColorChange}
-                        style={styles.colorInput}
-                    />
-                    <div style={{ ...styles.colorPreview, backgroundColor: color }} />
-                </div>
-
-                <span style={styles.hexLabel}>{color}</span>
             </div>
 
             {/* Handles */}
@@ -122,6 +101,7 @@ export function EditableNode({ id, data, isConnectable, type, selected }: NodePr
 const styles = {
     nodeContainer: {
         width: '150px',
+        minHeight: '60px',
         borderRadius: '8px',
         backgroundColor: '#fff',
         // Border set dynamically in component
@@ -130,58 +110,25 @@ const styles = {
         overflow: 'hidden',
         position: 'relative' as const,
         transition: 'all 0.15s ease-in-out',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    header: {
-        backgroundColor: '#f8fafc',
-        borderBottom: '1px solid #e2e8f0',
-        padding: '8px 12px',
+    labelContainer: {
+        width: '100%',
+        padding: '10px',
         cursor: 'text',
-        minHeight: '32px',
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center' as const,
     },
-    headerLabel: {
-        fontSize: '12px',
-        fontWeight: 'bold',
-        textTransform: 'uppercase' as const,
-        color: '#334155',
-        whiteSpace: 'nowrap' as const,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-    },
-    body: {
-        padding: '12px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-    },
-    pickerWrapper: {
-        position: 'relative' as const,
-        width: '30px',
-        height: '30px',
-        cursor: 'pointer',
-    },
-    colorInput: {
-        position: 'absolute' as const,
-        top: 0,
-        left: 0,
-        width: '100%',
-        height: '100%',
-        opacity: 0,
-        cursor: 'pointer',
-    },
-    colorPreview: {
-        width: '100%',
-        height: '100%',
-        borderRadius: '6px',
-        border: '1px solid #cbd5e1',
-        pointerEvents: 'none' as const,
-    },
-    hexLabel: {
+    labelText: {
         fontSize: '14px',
-        color: '#475569',
         fontWeight: 500,
-        fontFamily: 'monospace',
+        color: '#334155',
+        wordBreak: 'break-word' as const,
+        lineHeight: '1.4',
     },
     handle: {
         width: '10px',

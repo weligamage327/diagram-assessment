@@ -4,17 +4,18 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useDiagrams } from '../../hooks/useDiagrams';
 import type { Diagram } from '../../types';
-import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2 } from 'lucide-react';
+import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2, Trash2, X } from 'lucide-react';
 import './Dashboard.css';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const { user, userProfile, logout } = useAuth();
-    const { getUserDiagrams } = useDiagrams();
+    const { getUserDiagrams, deleteDiagram } = useDiagrams();
 
     const [diagrams, setDiagrams] = useState<Diagram[]>([]);
     const [loading, setLoading] = useState(true);
+    const [deleteModal, setDeleteModal] = useState<{ id: string; name: string } | null>(null);
 
     const isViewer = userProfile?.role === 'viewer';
 
@@ -52,6 +53,20 @@ const DashboardPage = () => {
             console.error('Logout failed:', error);
         }
     };
+
+    const confirmDelete = async () => {
+        if (!deleteModal) return;
+
+        try {
+            await deleteDiagram(deleteModal.id);
+            setDiagrams(prev => prev.filter(d => d.id !== deleteModal.id));
+            setDeleteModal(null);
+        } catch (error) {
+            console.error('Failed to delete diagram:', error);
+            alert('Failed to delete diagram');
+        }
+    };
+
     return (
         <div className="dashboard-container">
             {/* ... Header ... */}
@@ -134,12 +149,26 @@ const DashboardPage = () => {
                                     className="diagram-card"
                                     onClick={() => handleOpenDiagram(diagram.id)}
                                 >
-                                    {/* ... card content same ... */}
                                     <div className="diagram-preview">
                                         <LayoutGrid size={32} />
                                     </div>
                                     <div className="diagram-info">
-                                        <h4 className="diagram-name">{diagram.name}</h4>
+                                        <div className="diagram-header-row">
+                                            <h4 className="diagram-name">{diagram.name}</h4>
+                                            {!isViewer && (
+                                                <button
+                                                    className="delete-btn-inline"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteModal({ id: diagram.id, name: diagram.name });
+                                                    }}
+                                                    aria-label="Delete diagram"
+                                                    title="Delete diagram"
+                                                >
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
+                                        </div>
                                         <p className="diagram-meta">
                                             {diagram.nodeCount} nodes • Updated {diagram.updatedAt?.toLocaleDateString()}
                                         </p>
@@ -150,6 +179,32 @@ const DashboardPage = () => {
                     )}
                 </div>
             </main>
+
+            {/* Delete Confirmation Modal */}
+            {deleteModal && (
+                <div className="modal-overlay" onClick={() => setDeleteModal(null)}>
+                    <div className="modal-content" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3 className="modal-title">Delete Diagram</h3>
+                            <button className="modal-close" onClick={() => setDeleteModal(null)}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Are you sure you want to delete <span className="highlight-text">"{deleteModal.name}"</span>?</p>
+                            <p className="modal-warning">This action cannot be undone.</p>
+                        </div>
+                        <div className="modal-footer">
+                            <button className="modal-btn secondary" onClick={() => setDeleteModal(null)}>
+                                Cancel
+                            </button>
+                            <button className="modal-btn danger" onClick={confirmDelete}>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

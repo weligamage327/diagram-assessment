@@ -150,7 +150,32 @@
 }
 
 /* React Flow Custom Node & Edge Styles */
+/* Reset default wrapper styles to avoid double-boxing */
 .react-flow__node {
+    background: transparent;
+    border: none;
+    padding: 0;
+    box-shadow: none;
+}
+
+/* Force remove default React Flow selection styles */
+.react-flow__node.selected,
+.react-flow__node:focus,
+.react-flow__node:focus-visible,
+.react-flow__node-default.selected,
+.react-flow__node-default:focus,
+.react-flow__node-input.selected,
+.react-flow__node-input:focus,
+.react-flow__node-output.selected,
+.react-flow__node-output:focus {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+/* BaseNode Styles - Mimicking standard nodes */
+.base-node {
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: 8px;
@@ -158,22 +183,35 @@
     font-size: 14px;
     color: var(--text-primary);
     box-shadow: var(--shadow-card);
+    min-width: 150px;
+    /* Optional: standard width */
+    text-align: center;
+    position: relative;
+    transition: all 0.2s ease;
 }
 
-.react-flow__node.selected {
+.base-node-content {
+    pointer-events: none;
+    /* Allow clicks to pass through if needed, though simple text is fine */
+}
+
+/* Handle Styling */
+.react-flow__handle {
+    width: 8px;
+    height: 8px;
+    background: var(--border-color);
+}
+
+.react-flow__handle:hover {
+    background: var(--accent-primary);
+}
+
+.react-flow__node-input .base-node {
+    border-color: var(--accent-secondary);
+}
+
+.react-flow__node-output .base-node {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px var(--focus-ring);
-}
-
-.react-flow__node-input {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
-    color: white;
-    border: none;
-}
-
-.react-flow__node-output {
-    background: var(--bg-toggle);
-    border: 2px solid var(--accent-primary);
 }
 
 .react-flow__handle {

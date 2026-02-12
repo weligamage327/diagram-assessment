@@ -10,6 +10,7 @@ import {
     where,
     serverTimestamp,
     orderBy,
+    deleteDoc,
     type Timestamp
 } from 'firebase/firestore';
 import { db } from '../services/firebase';
@@ -122,11 +123,27 @@ export const useDiagrams = () => {
         }
     }, [user]);
 
+    const deleteDiagram = useCallback(async (id: string) => {
+        if (!user) throw new Error('User must be authenticated');
+        setLoading(true);
+        setError(null);
+        try {
+            await deleteDoc(doc(db, 'diagrams', id));
+        } catch (err) {
+            console.error('Error deleting diagram:', err);
+            setError('Failed to delete diagram');
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [user]);
+
     return {
         createDiagram,
         updateDiagram,
         getDiagram,
         getUserDiagrams,
+        deleteDiagram,
         loading,
         error
     };
