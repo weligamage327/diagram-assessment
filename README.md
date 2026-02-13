@@ -17,6 +17,24 @@ A modern, collaborative diagramming application built with React, TypeScript, an
 -   **Sharing**: Share diagrams with other users via email, granting them view or edit access.
 -   **Demo Features**: The **Profile** screen includes a "Switch Role" button. This allows you to toggle your account between **Editor** and **Viewer** roles to test the RBAC (Role-Based Access Control) functionality without needing multiple accounts.
 
+## Usage
+
+### 1. Account Setup
+1. **Sign Up**: Navigate to the [deployment URL](https://diagram-assessment.web.app/login) (or your local instance).
+2. Switch to the **Sign Up** tab and enter your email and password.
+3. **Default Role**: New accounts are created with the **Viewer** role by default.
+
+### 2. Switching Roles (Demo Feature)
+To test the full capabilities of the editor (adding, editing, and deleting nodes):
+1. Click the **Profile** icon in the dashboard or editor header.
+2. Click the **"Switch to Editor Mode"** button.
+3. Your permissions will update instantly, allowing you to create and modify diagrams.
+
+### 3. Creating Diagrams
+1. From the **Dashboard**, click **"New Diagram"**.
+2. Use the toolbar to add nodes and connect them.
+3. Saving a diagram will make it available in your dashboard for future editing.
+
 ## Tech Stack
 
 -   **Frontend**: React 19, TypeScript
