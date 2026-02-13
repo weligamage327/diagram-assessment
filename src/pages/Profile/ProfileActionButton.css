@@ -1,0 +1,46 @@
+.profile-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+    font-family: inherit;
+    font-size: 15px;
+}
+
+.profile-action-btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+/* Secondary Variant (Switch Role) */
+.profile-action-btn-secondary {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.profile-action-btn-secondary:hover:not(:disabled) {
+    background: var(--bg-toggle);
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* Danger Variant (Logout) */
+.profile-action-btn-danger {
+    background: var(--error-bg);
+    border-color: var(--error-border);
+    color: var(--error-text);
+}
+
+.profile-action-btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
+}

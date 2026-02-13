@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useTheme } from '../../hooks/useTheme';
 import { useNavigate } from 'react-router-dom';
+import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { LayoutGrid, Sun, Moon } from 'lucide-react';
+import { Button } from '../../components/Button';
 import './Login.css';
 
 const Login = () => {
@@ -132,9 +133,15 @@ const Login = () => {
                             </div>
                         )}
 
-                        <button type="submit" className="login-submit" disabled={loading}>
-                            {loading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
-                        </button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            size="lg"
+                            isLoading={loading}
+                            className="login-submit"
+                        >
+                            {isLogin ? 'Sign In' : 'Create Account'}
+                        </Button>
                     </form>
 
                     {isLogin && (

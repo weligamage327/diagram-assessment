@@ -1,0 +1,79 @@
+.editable-node-container {
+    width: 150px;
+    min-height: 60px;
+    border-radius: 8px;
+    background-color: #fff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    font-family: sans-serif;
+    overflow: hidden;
+    position: relative;
+    transition: all 0.15s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #e2e8f0;
+}
+
+.editable-node-container:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.editable-node-container.selected {
+    border: 2px solid var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 1px var(--accent-primary, #3b82f6), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.editable-node-label {
+    width: 100%;
+    padding: 10px;
+    cursor: text;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+
+.editable-node-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.editable-node-input {
+    width: 100%;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 4px;
+    color: #334155;
+    background-color: #fff;
+    outline: none;
+}
+
+.editable-node-input:focus {
+    border-color: var(--accent-primary, #3b82f6);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.editable-node-handle {
+    width: 10px;
+    height: 10px;
+    background-color: #94a3b8;
+    border-radius: 50%;
+}
+
+.editable-node-handle.top {
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.editable-node-handle.bottom {
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+}

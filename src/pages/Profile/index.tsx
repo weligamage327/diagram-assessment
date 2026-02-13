@@ -4,7 +4,8 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { db } from '../../services/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { User, LogOut, ArrowLeft, Moon, Sun, Shield, Loader2 } from 'lucide-react';
+import { User, LogOut, ArrowLeft, Moon, Sun, Shield } from 'lucide-react';
+import { ProfileActionButton } from './ProfileActionButton';
 import './Profile.css';
 
 const Profile = () => {
@@ -75,25 +76,23 @@ const Profile = () => {
                     </div>
 
                     <div className="profile-actions">
-                        <button
-                            className="role-switch-btn"
+                        <ProfileActionButton
+                            variant="secondary"
                             onClick={toggleRole}
                             disabled={isUpdating}
+                            isLoading={isUpdating}
+                            icon={<Shield size={18} />}
                         >
-                            {isUpdating ? (
-                                <Loader2 className="animate-spin" size={18} />
-                            ) : (
-                                <Shield size={18} />
-                            )}
-                            <span>
-                                Switch to {userProfile?.role === 'viewer' ? 'Editor' : 'Viewer'} Mode
-                            </span>
-                        </button>
+                            Switch to {userProfile?.role === 'viewer' ? 'Editor' : 'Viewer'} Mode
+                        </ProfileActionButton>
 
-                        <button className="logout-button" onClick={handleLogout}>
-                            <LogOut size={18} />
-                            <span>Sign Out</span>
-                        </button>
+                        <ProfileActionButton
+                            variant="danger"
+                            onClick={handleLogout}
+                            icon={<LogOut size={18} />}
+                        >
+                            Sign Out
+                        </ProfileActionButton>
                     </div>
                 </div>
             </div>

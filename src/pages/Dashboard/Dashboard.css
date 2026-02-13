@@ -5,6 +5,25 @@
     transition: background 0.3s ease;
 }
 
+.dashboard-toast {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #10b981;
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px;
+    z-index: 2000;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    animation: fadeIn 0.3s ease-in-out;
+    font-size: 14px;
+    font-weight: 500;
+}
+
 /* Header */
 .dashboard-header {
     display: flex;
@@ -394,4 +413,182 @@
 
 [data-theme='dark'] .modal-btn.danger:hover {
     background: rgba(220, 38, 38, 0.2);
+}
+
+/* Card Actions */
+.card-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.icon-btn-inline {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    cursor: pointer;
+    background: transparent;
+    transition: all 0.2s;
+}
+
+.icon-btn-inline.share {
+    color: var(--accent-primary);
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.2);
+}
+
+.icon-btn-inline.share:hover {
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-1px);
+}
+
+.icon-btn-inline.delete {
+    color: var(--error-text);
+    background: rgba(220, 38, 38, 0.05);
+    border-color: var(--error-border);
+}
+
+.icon-btn-inline.delete:hover {
+    background: var(--error-bg);
+    transform: translateY(-1px);
+}
+
+.badge-shared {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 8px;
+    border: 1px solid var(--border-color);
+    vertical-align: middle;
+    font-weight: 500;
+}
+
+.badge-shared.viewer {
+    background: var(--bg-toggle);
+    color: var(--text-secondary);
+}
+
+.badge-shared.editor {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+    border-color: rgba(16, 185, 129, 0.2);
+}
+
+[data-theme='dark'] .badge-shared.editor {
+    background: rgba(16, 185, 129, 0.15);
+    color: #34d399;
+    border-color: rgba(16, 185, 129, 0.3);
+}
+
+/* Modal Form Styles */
+.modal-input {
+    width: 100%;
+    padding: 10px 12px;
+    padding-left: 36px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.modal-input:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.input-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.role-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.role-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.role-option:hover {
+    background: var(--bg-surface);
+}
+
+.role-option.active {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: var(--accent-primary);
+}
+
+.role-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--bg-toggle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.role-option.active .role-icon {
+    background: white;
+    color: var(--accent-primary);
+}
+
+.role-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.role-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.role-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.modal-btn.primary {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-secondary) 100%);
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+}
+
+.modal-btn.primary:hover {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.modal-btn.primary:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
 }

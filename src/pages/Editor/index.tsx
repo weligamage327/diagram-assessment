@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import {
     ReactFlow,
@@ -17,44 +17,19 @@ import '@xyflow/react/dist/style.css';
 import { useTheme } from '../../hooks/useTheme';
 import { useDiagrams } from '../../hooks/useDiagrams';
 import { useAuth } from '../../hooks/useAuth';
-import type { DiagramData, AppNode, AppEdge } from '../../types';
+import type { DiagramData, AppNode, AppEdge, Diagram } from '../../types';
+import { canEditDiagram } from '../../utils/permissions';
 import { ArrowLeft, Save, Sun, Moon, Plus, Trash2, Loader2 } from 'lucide-react';
 import './DiagramEditor.css';
 
-import { BaseNode } from './BaseNode';
+import { BaseNode } from './components/BaseNode';
+import { initialNodes, initialEdges } from '../../constants/initialElements'
 
 const nodeTypes = {
     default: BaseNode,
     input: BaseNode,
     output: BaseNode,
 };
-
-// Initial nodes for a new diagram
-const initialNodes: AppNode[] = [
-    {
-        id: '1',
-        position: { x: 250, y: 100 },
-        data: { label: 'Start' },
-        type: 'input',
-    },
-    {
-        id: '2',
-        position: { x: 250, y: 250 },
-        data: { label: 'Process' },
-        type: 'default',
-    },
-    {
-        id: '3',
-        position: { x: 250, y: 400 },
-        data: { label: 'End' },
-        type: 'output',
-    },
-];
-
-const initialEdges: AppEdge[] = [
-    { id: 'e1-2', source: '1', target: '2', animated: true },
-    { id: 'e2-3', source: '2', target: '3' },
-];
 
 const DiagramEditorContent = () => {
     const navigate = useNavigate();
@@ -65,7 +40,16 @@ const DiagramEditorContent = () => {
     const { userProfile } = useAuth();
     const { getViewport } = useReactFlow();
 
-    const isViewer = userProfile?.role === 'viewer';
+    const [diagram, setDiagram] = useState<Diagram | null>(null);
+
+    // Determine effective permission
+    // If no ID (creating new), allow edit.
+    // If ID exists but diagram not loaded yet, default to read-only for safety.
+    const isReadOnly = useMemo(() => {
+        if (!id) return false; // Creating new diagram
+        if (!diagram) return true; // Still loading or not found
+        return !canEditDiagram(userProfile, diagram);
+    }, [id, diagram, userProfile]);
 
     const [diagramName, setDiagramName] = useState(id ? 'Untitled Diagram' : 'New Diagram');
     const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
@@ -93,15 +77,25 @@ const DiagramEditorContent = () => {
         const loadDiagram = async () => {
             setIsLoading(true);
             try {
-                const diagram = await getDiagram(id);
-                if (diagram) {
-                    setDiagramName(diagram.name);
-                    if (diagram.data) {
-                        const loadedData = diagram.data as DiagramData;
+                const loadedDiagram = await getDiagram(id);
+                if (loadedDiagram) {
+                    setDiagram(loadedDiagram);
+                    setDiagramName(loadedDiagram.name);
+
+                    // Calculate permission immediately for initial node mapping
+                    // Note: userProfile might be null initially, handled by canEditDiagram defaulting to false
+                    // We must rely on the effect dependency on userProfile to re-render if it changes
+                    const canEdit = canEditDiagram(userProfile, loadedDiagram);
+
+                    if (loadedDiagram.data) {
+                        const loadedData = loadedDiagram.data as DiagramData;
                         // Map loaded nodes to ensure they work with default types
                         const mappedNodes = loadedData.nodes.map((n) => ({
                             ...n,
-                            data: n.data || { label: 'Node' },
+                            data: {
+                                ...(n.data || { label: 'Node' }),
+                                isReadOnly: !canEdit
+                            },
                             // Keep existing type if it's default/input/output, otherwise fallback to default
                             type: ['input', 'output', 'default'].includes(n.type || '') ? n.type : 'default',
                         })) as AppNode[];
@@ -113,7 +107,7 @@ const DiagramEditorContent = () => {
                         setLastSavedSnapshot(JSON.stringify({
                             nodes: mappedNodes,
                             edges: (loadedData.edges as AppEdge[]) || [],
-                            name: diagram.name
+                            name: loadedDiagram.name
                         }));
                     }
                 } else {
@@ -130,35 +124,46 @@ const DiagramEditorContent = () => {
         };
 
         loadDiagram();
-    }, [id, getDiagram, navigate, setNodes, setEdges]);
+    }, [id, getDiagram, navigate, setNodes, setEdges, userProfile]); // Added userProfile dependency to re-evaluate permissions
+
+    // Re-apply read-only state to all nodes if permission changes (e.g., userProfile loads)
+    useEffect(() => {
+        setNodes((nds) => nds.map(node => ({
+            ...node,
+            data: { ...node.data, isReadOnly }
+        })));
+    }, [isReadOnly, setNodes]);
 
     const onConnect: OnConnect = useCallback(
         (params) => {
-            if (isViewer) return;
+            if (isReadOnly) return;
             setEdges((eds) => addEdge(params, eds));
         },
-        [setEdges, isViewer]
+        [setEdges, isReadOnly]
     );
 
     const addNode = () => {
-        if (isViewer) return;
+        if (isReadOnly) return;
         const newNode: AppNode = {
             id: `${nodes.length + 1}_${Date.now()}`,
             position: { x: Math.random() * 400 + 100, y: Math.random() * 400 + 100 },
-            data: { label: `Node ${nodes.length + 1}` },
+            data: {
+                label: `Node ${nodes.length + 1}`,
+                isReadOnly: isReadOnly
+            },
             type: 'default',
         };
         setNodes((nds) => [...nds, newNode]);
     };
 
     const deleteSelectedNodes = () => {
-        if (isViewer) return;
+        if (isReadOnly) return;
         setNodes((nds) => nds.filter((node) => !node.selected));
         setEdges((eds) => eds.filter((edge) => !edge.selected));
     };
 
     const handleSave = async () => {
-        if (isViewer) return;
+        if (isReadOnly) return;
 
         if (!diagramName.trim()) {
             alert('Please enter a diagram name');
@@ -169,6 +174,9 @@ const DiagramEditorContent = () => {
         try {
             const viewport = getViewport();
             const diagramData: DiagramData = {
+                // Must sanitize nodes to remove isReadOnly before saving? 
+                // Actually Firestore doesn't care, but it's cleaner to remove transient UI state.
+                // But for now, saving it is harmless as it gets overwritten on load.
                 nodes: nodes,
                 edges: edges,
                 viewport
@@ -236,8 +244,8 @@ const DiagramEditorContent = () => {
                     <button className="editor-btn icon-btn" onClick={handleBack} aria-label="Back">
                         <ArrowLeft size={20} />
                     </button>
-                    {isViewer ? (
-                        <h2 className="header-title">{diagramName} <span className="role-badge viewer" style={{ fontSize: '12px', verticalAlign: 'middle', marginLeft: '10px' }}>View Only</span></h2>
+                    {isReadOnly ? (
+                        <h2 className="header-title">{diagramName} <span className="role-badge viewer" style={{ fontSize: '12px', verticalAlign: 'middle', marginLeft: '10px' }}>Read Only</span></h2>
                     ) : (
                         <input
                             type="text"
@@ -250,7 +258,7 @@ const DiagramEditorContent = () => {
                 </div>
 
                 <div className="header-center">
-                    {!isViewer && (
+                    {!isReadOnly && (
                         <>
                             <button className="editor-btn" onClick={addNode}>
                                 <Plus size={18} />
@@ -268,7 +276,7 @@ const DiagramEditorContent = () => {
                     <button className="editor-btn icon-btn" onClick={toggleTheme} aria-label="Toggle theme">
                         {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
                     </button>
-                    {!isViewer && (
+                    {!isReadOnly && (
                         <>
 
                             <button
@@ -294,12 +302,11 @@ const DiagramEditorContent = () => {
                     onNodesChange={onNodesChange}
                     onEdgesChange={onEdgesChange}
                     onConnect={onConnect}
-                    // onNodeClick={onNodeClick} - Removed for inline editing
                     nodeTypes={nodeTypes}
                     fitView
                     colorMode={theme === 'dark' ? 'dark' : 'light'}
-                    nodesDraggable={!isViewer}
-                    nodesConnectable={!isViewer}
+                    nodesDraggable={!isReadOnly}
+                    nodesConnectable={!isReadOnly}
                     elementsSelectable={true}
                 >
                     <Controls />

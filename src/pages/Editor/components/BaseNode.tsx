@@ -1,12 +1,11 @@
 import { useCallback } from 'react';
 import { Handle, Position, type NodeProps, useReactFlow } from '@xyflow/react';
-import type { AppNode } from '../../types';
-import { useAuth } from '../../hooks/useAuth';
+import type { AppNode } from '../../../types';
+import './BaseNode.css';
 
 export function BaseNode({ id, data, isConnectable, targetPosition = Position.Top, sourcePosition = Position.Bottom }: NodeProps<AppNode>) {
     const { updateNodeData } = useReactFlow();
-    const { userProfile } = useAuth();
-    const isViewer = userProfile?.role === 'viewer';
+    const isReadOnly = data.isReadOnly;
 
     const onChange = useCallback((evt: React.ChangeEvent<HTMLInputElement>) => {
         updateNodeData(id, { label: evt.target.value });
@@ -29,21 +28,8 @@ export function BaseNode({ id, data, isConnectable, targetPosition = Position.To
                     name="text"
                     value={data.label as string}
                     onChange={onChange}
-                    disabled={isViewer}
-                    className="nodrag"
-                    style={{
-                        width: '100%',
-                        border: 'none',
-                        outline: 'none',
-                        textAlign: 'center',
-                        background: 'transparent',
-                        color: 'inherit',
-                        font: 'inherit',
-                        padding: 0,
-                        margin: 0,
-                        pointerEvents: isViewer ? 'none' : 'all',
-                        cursor: isViewer ? 'default' : 'text'
-                    }}
+                    disabled={isReadOnly}
+                    className="base-node-input nodrag"
                 />
             </div>
 

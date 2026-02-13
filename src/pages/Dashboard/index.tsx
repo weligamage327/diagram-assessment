@@ -4,18 +4,23 @@ import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../hooks/useAuth';
 import { useDiagrams } from '../../hooks/useDiagrams';
 import type { Diagram } from '../../types';
-import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2, Trash2, X } from 'lucide-react';
+import { Sun, Moon, Plus, LogOut, User, LayoutGrid, Loader2 } from 'lucide-react';
+import { DeleteConfirmationModal } from './components/DeleteConfirmationModal';
+import { ShareDiagramModal } from './components/ShareDiagramModal';
+import { DiagramCard } from './components/DiagramCard';
 import './Dashboard.css';
 
 const DashboardPage = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const { user, userProfile, logout } = useAuth();
-    const { getUserDiagrams, deleteDiagram } = useDiagrams();
+    const { getUserDiagrams, deleteDiagram, shareDiagram } = useDiagrams();
 
     const [diagrams, setDiagrams] = useState<Diagram[]>([]);
     const [loading, setLoading] = useState(true);
     const [deleteModal, setDeleteModal] = useState<{ id: string; name: string } | null>(null);
+    const [shareModal, setShareModal] = useState<{ id: string; name: string } | null>(null);
+    const [shareSuccess, setShareSuccess] = useState<string | null>(null);
 
     const isViewer = userProfile?.role === 'viewer';
 
@@ -67,11 +72,29 @@ const DashboardPage = () => {
         }
     };
 
+    const handleShareSubmit = async (email: string, role: 'view' | 'edit') => {
+        if (!shareModal) return;
+
+        try {
+            await shareDiagram(shareModal.id, email, role);
+            setShareSuccess(`Shared "${shareModal.name}" successfully!`);
+            setTimeout(() => setShareSuccess(null), 3000);
+        } catch (error) {
+            console.error('Failed to share diagram:', error);
+            alert('Failed to share diagram');
+            throw error;
+        }
+    };
+
     return (
         <div className="dashboard-container">
+            {shareSuccess && (
+                <div className="dashboard-toast">
+                    <span>{shareSuccess}</span>
+                </div>
+            )}
             {/* ... Header ... */}
             <header className="dashboard-header">
-                {/* ... same header content ... */}
                 <div className="header-left">
                     <div className="header-logo">
                         <LayoutGrid size={24} />
@@ -115,7 +138,7 @@ const DashboardPage = () => {
                         {!isViewer && (
                             <button className="create-btn" onClick={handleCreateDiagram}>
                                 <Plus size={20} />
-                                <span>New Diagram</span>
+                                <span style={{ marginLeft: '8px' }}>New Diagram</span>
                             </button>
                         )}
                     </div>
@@ -137,43 +160,22 @@ const DashboardPage = () => {
                             {!isViewer && (
                                 <button className="create-btn" onClick={handleCreateDiagram}>
                                     <Plus size={20} />
-                                    <span>Create Diagram</span>
+                                    <span style={{ marginLeft: '8px' }}>Create Diagram</span>
                                 </button>
                             )}
                         </div>
                     ) : (
                         <div className="diagrams-grid">
                             {diagrams.map((diagram) => (
-                                <div
+                                <DiagramCard
                                     key={diagram.id}
-                                    className="diagram-card"
-                                    onClick={() => handleOpenDiagram(diagram.id)}
-                                >
-                                    <div className="diagram-preview">
-                                        <LayoutGrid size={32} />
-                                    </div>
-                                    <div className="diagram-info">
-                                        <div className="diagram-header-row">
-                                            <h4 className="diagram-name">{diagram.name}</h4>
-                                            {!isViewer && (
-                                                <button
-                                                    className="delete-btn-inline"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteModal({ id: diagram.id, name: diagram.name });
-                                                    }}
-                                                    aria-label="Delete diagram"
-                                                    title="Delete diagram"
-                                                >
-                                                    <Trash2 size={16} />
-                                                </button>
-                                            )}
-                                        </div>
-                                        <p className="diagram-meta">
-                                            {diagram.nodeCount} nodes • Updated {diagram.updatedAt?.toLocaleDateString()}
-                                        </p>
-                                    </div>
-                                </div>
+                                    diagram={diagram}
+                                    currentUserId={user?.uid}
+                                    currentUserEmail={user?.email}
+                                    onOpen={handleOpenDiagram}
+                                    onDelete={(id, name) => setDeleteModal({ id, name })}
+                                    onShare={(id, name) => setShareModal({ id, name })}
+                                />
                             ))}
                         </div>
                     )}
@@ -181,30 +183,20 @@ const DashboardPage = () => {
             </main>
 
             {/* Delete Confirmation Modal */}
-            {deleteModal && (
-                <div className="modal-overlay" onClick={() => setDeleteModal(null)}>
-                    <div className="modal-content" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h3 className="modal-title">Delete Diagram</h3>
-                            <button className="modal-close" onClick={() => setDeleteModal(null)}>
-                                <X size={20} />
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            <p>Are you sure you want to delete <span className="highlight-text">"{deleteModal.name}"</span>?</p>
-                            <p className="modal-warning">This action cannot be undone.</p>
-                        </div>
-                        <div className="modal-footer">
-                            <button className="modal-btn secondary" onClick={() => setDeleteModal(null)}>
-                                Cancel
-                            </button>
-                            <button className="modal-btn danger" onClick={confirmDelete}>
-                                Delete
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <DeleteConfirmationModal
+                isOpen={!!deleteModal}
+                onClose={() => setDeleteModal(null)}
+                onConfirm={confirmDelete}
+                itemName={deleteModal?.name || ''}
+            />
+
+            {/* Share Modal */}
+            <ShareDiagramModal
+                isOpen={!!shareModal}
+                onClose={() => setShareModal(null)}
+                diagramName={shareModal?.name || ''}
+                onShare={handleShareSubmit}
+            />
         </div>
     );
 };
