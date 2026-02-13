@@ -46,7 +46,7 @@ const DiagramEditorContent = () => {
     // If no ID (creating new), allow edit.
     // If ID exists but diagram not loaded yet, default to read-only for safety.
     const isReadOnly = useMemo(() => {
-        if (!id) return false; // Creating new diagram
+        if (!id) return userProfile?.role === 'viewer'; // Restricted for new diagrams if viewer
         if (!diagram) return true; // Still loading or not found
         return !canEditDiagram(userProfile, diagram);
     }, [id, diagram, userProfile]);

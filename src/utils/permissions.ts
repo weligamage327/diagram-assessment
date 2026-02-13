@@ -13,12 +13,20 @@ import type { UserProfile, Diagram } from '../types';
 export const canEditDiagram = (user: UserProfile | null, diagram: Diagram | null): boolean => {
     if (!user || !diagram) return false;
 
-    // 1. Owner check
-    if (diagram.ownerId === user.uid) return true;
-
-    // 2. Shared permission check
+    // 1. Check if user is shared as an editor (always allows edit)
     const sharedWithUser = diagram.sharedWith?.find(s => s.email === user.email);
     if (sharedWithUser?.access === 'edit') return true;
+
+    // 2. Owner checks
+    if (diagram.ownerId === user.uid) {
+        // If owner is an editor -> true
+        if (user.role === 'editor') return true;
+
+        // If owner is a viewer -> true ONLY if they've shared it with at least one editor
+        // (This allows them to "demo" the editor behavior if they have set up collaborators)
+        const hasEditorCollab = diagram.sharedWith?.some(s => s.access === 'edit');
+        if (hasEditorCollab) return true;
+    }
 
     return false;
 };
