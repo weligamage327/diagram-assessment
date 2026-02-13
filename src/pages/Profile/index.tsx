@@ -11,7 +11,7 @@ import './Profile.css';
 const Profile = () => {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
-    const { user, userProfile, logout } = useAuth();
+    const { user, userProfile, logout, loading } = useAuth();
     const [isUpdating, setIsUpdating] = useState(false);
 
     const handleLogout = async () => {
@@ -70,7 +70,7 @@ const Profile = () => {
                         <h2 className="profile-email">{user?.email}</h2>
                         <div className="role-badge-container">
                             <span className={`role-badge ${userProfile?.role || 'viewer'}`}>
-                                {userProfile?.role ? userProfile.role.toUpperCase() : 'LOADING...'}
+                                {loading ? 'LOADING...' : (userProfile?.role ? userProfile.role.toUpperCase() : 'ERROR / NOT FOUND')}
                             </span>
                         </div>
                     </div>
